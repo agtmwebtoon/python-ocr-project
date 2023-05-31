@@ -3,6 +3,7 @@ import base64
 import json
 import uuid
 import time
+import markdown
 
 # https://console.ncloud.com/ocr/domain
 
@@ -46,6 +47,10 @@ response = requests.request("POST", api_url, headers=headers, data = payload, fi
 
 info_list = []
 
+store_list = []
+product_list = []
+total_price = ""
+
 result = response.json()
 
 # json 파일 저장
@@ -60,28 +65,40 @@ result = response.json()
 # 구매품목
 # 금액
 
+
 for image in result['images']:
     if 'receipt' in image:
         receipt = image['receipt']
         if 'result' in receipt:
             result_info = receipt['result']
 
+            # 가게 정보
             if 'storeInfo' in result_info:
                 store_info = result_info['storeInfo']
                 # 상호명
                 if 'name' in store_info:
                     name = store_info['name']
                     if 'text' in name:
-                        info_list.append('상호명 : ' + name['text'])
-                # 점
+                        # info_list.append('상호명 : ' + name['text'])
+                        store_list.append(name['text'])
+
+
+                # if ('subName' in store_info) is not None:
+                    # 점
                 if 'subName' in store_info:
                     subName = store_info['subName']
                     if 'text' in subName:
-                        info_list.append('점 : ' + subName['text'])
+                        # info_list.append('점 : ' + subName['text'])
+                        store_list.append(subName['text'])
+                else:
+                    store_list.append('null')
+
+
                 # 주소
                 for addresses in store_info['addresses']:
                     if 'text' in addresses:
-                        info_list.append('주소 : ' + addresses['text'])
+                        # info_list.append('주소 : ' + addresses['text'])
+                        store_list.append(addresses['text'])
 
 
             # 날짜
@@ -90,53 +107,111 @@ for image in result['images']:
                 if 'date' in paymentInfo:
                     date = paymentInfo['date']
                     if 'text' in date:
-                        info_list.append('구매날짜 : ' + date['text'])
+                        # info_list.append('구매날짜 : ' + date['text'])
+                        store_list.append(date['text'])
 
-            info_list.append('----------')
-            # 구매품목
+
+            # info_list.append('--------------------')
+
+            # 품목 정보
             for subResults in result_info['subResults']:
                 for items in subResults['items']:
                     # 상품명
                     if 'name' in items:
                         name = items['name']
                         if 'text' in name:
-                            info_list.append('품 명 : ' + name['text'])
+                            # info_list.append('품 명 : ' + name['text'])
+                            product_list.append(name['text'])
 
+                    # if ('count' in items) is not None:
                     # 수량
                     if 'count' in items:
                         count = items['count']
                         if 'text' in count:
-                            info_list.append('수량 : ' + count['text'])
+                            # info_list.append('수량 : ' + count['text'])
+                            product_list.append(count['text'])
+                    else:
+                        product_list.append('null')
 
+                    # 금액 정보
                     if 'price' in items:
                         price = items['price']
                         # 단가
                         if 'unitPrice' in price:
                             unitPrice = price['unitPrice']
                             if 'text' in unitPrice:
-                                info_list.append('단가 : ' + unitPrice['text'])
+                                # info_list.append('단가 : ' + unitPrice['text'])
+                                product_list.append(unitPrice['text'])
+
                         # 금액
                         if 'price' in price:
                             price = price['price']
                             if 'text' in price:
-                                info_list.append('금액 : ' + price['text'])
-                    info_list.append('----------')
+                                # info_list.append('금액 : ' + price['text'])
+                                product_list.append(price['text'])
 
-           #총 금액
+
+                    # info_list.append('--------------------')
+
+
+            #총 금액
             if 'totalPrice' in result_info:
                 totalPrice = result_info['totalPrice']
                 if 'price' in totalPrice:
                     price = totalPrice['price']
                     if 'text' in price:
                         info_list.append('총 금액 : ' + price['text'])
+                        totalPrice = price['text']
 
 
 
-for info in info_list:
-    print(info)
-    # print(f"- {info}")
+# for info in info_list:
+#     print(info)
+#     print(f"- {info}")
+
+for store in store_list:
+    print(store)
+
+for product in product_list:
+    print(product)
+
+print(total_price)
+
+
+# data = [
+#     ['이름', '나이', '이메일'],
+#     ['John', '25', 'john@example.com'],
+#     ['Alice', '30', 'alice@example.com'],
+#     ['Bob', '35', 'bob@example.com']
+# ]
+
+'''
+'''
+data = [
+    ['상호명', '점', '주소', '날짜'],
+    store_list,
+    ['상품명', '수량', '단가', '금액'],
+    product_list,
+    '총금액',
+    total_price]
 
 
 
+# 데이터를 표 형식의 마크다운으로 변환하는 함수
+def convert_data_to_markdown(data):
+    markdown = '| ' + ' | '.join(data[0]) + ' |\n'
+    markdown += '| ' + ' | '.join(['---'] * len(data[0])) + ' |\n'
+    for row in data[1:]:
+        markdown += '| ' + ' | '.join(row) + ' |\n'
+    return markdown
+
+# 마크다운 파일 열기
+with open('output.md', 'w', encoding="utf-8") as file:
+    # 기존의 마크다운 내용 작성
+    file.write('# 데이터\n\n')
+
+    # 파이썬에서 처리된 데이터를 마크다운으로 변환하여 삽입
+    markdown_data = convert_data_to_markdown(data)
+    file.write(markdown_data)
 
 
