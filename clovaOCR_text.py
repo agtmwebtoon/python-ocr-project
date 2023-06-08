@@ -5,18 +5,24 @@ import uuid
 import time
 import markdown
 
+# import subprocess
+# import pypandoc
+# import subprocess
+
+# from markdown2pdf import convert #작동안됨
+# import aspose.words as aw #워터마크있음
+import aspose.words as aw
+
 # https://console.ncloud.com/ocr/domain
 
 # 위 주소에 GateWay 연결주소 입력
-# api_url = 'https://4bkpwd0u5u.apigw.ntruss.com/custom/v1/22680/8753239e7f66c7d91d7966bd868c13c4a9f8a4df644cbcbca8f1f17044628919/document/receipt'
 api_url = ''
 
 # Document OCR Secret Key 입력
-# secret_key = 'Y2tXWnZWellKeElXYnliSkhkT3RYUXZYSEVzVm12THE='
 secret_key = ''
 
 # image 파일 입력
-image_file = 'input/3.jpg'
+image_file = 'input/5.jpg'
 
 # CLOVA OCR 형식
 requests_json = {
@@ -58,12 +64,18 @@ result = response.json()
 # with open(output_file, 'w', encoding='utf-8') as outfile:
 #     json.dump(result, outfile, indent=4, ensure_ascii=False)
 
+
 # 상호명
 # 점
 # 주소
 # 날짜
-# 구매품목
+
+# 상품명
+# 수량
+# 단가
 # 금액
+
+# 총 금액
 
 
 for image in result['images']:
@@ -81,18 +93,17 @@ for image in result['images']:
                     if 'text' in name:
                         # info_list.append('상호명 : ' + name['text'])
                         store_list.append(name['text'])
+                else:
+                    store_list.append('상호명없음')
 
-
-                # if ('subName' in store_info) is not None:
-                    # 점
+                # 점
                 if 'subName' in store_info:
                     subName = store_info['subName']
                     if 'text' in subName:
                         # info_list.append('점 : ' + subName['text'])
                         store_list.append(subName['text'])
                 else:
-                    store_list.append('null')
-
+                    store_list.append('점없음')
 
                 # 주소
                 for addresses in store_info['addresses']:
@@ -109,9 +120,8 @@ for image in result['images']:
                     if 'text' in date:
                         # info_list.append('구매날짜 : ' + date['text'])
                         store_list.append(date['text'])
-
-
-            # info_list.append('--------------------')
+            else:
+                store_list.append('날짜없음')
 
             # 품목 정보
             for subResults in result_info['subResults']:
@@ -122,8 +132,9 @@ for image in result['images']:
                         if 'text' in name:
                             # info_list.append('품 명 : ' + name['text'])
                             product_list.append(name['text'])
+                    else:
+                        product_list.append('품명없음')
 
-                    # if ('count' in items) is not None:
                     # 수량
                     if 'count' in items:
                         count = items['count']
@@ -131,7 +142,7 @@ for image in result['images']:
                             # info_list.append('수량 : ' + count['text'])
                             product_list.append(count['text'])
                     else:
-                        product_list.append('null')
+                        product_list.append('수량없음')
 
                     # 금액 정보
                     if 'price' in items:
@@ -142,6 +153,8 @@ for image in result['images']:
                             if 'text' in unitPrice:
                                 # info_list.append('단가 : ' + unitPrice['text'])
                                 product_list.append(unitPrice['text'])
+                        else:
+                            product_list.append('단가없음')
 
                         # 금액
                         if 'price' in price:
@@ -149,9 +162,10 @@ for image in result['images']:
                             if 'text' in price:
                                 # info_list.append('금액 : ' + price['text'])
                                 product_list.append(price['text'])
+                        else:
+                            product_list.append('금액없음')
 
 
-                    # info_list.append('--------------------')
 
 
             #총 금액
@@ -160,8 +174,12 @@ for image in result['images']:
                 if 'price' in totalPrice:
                     price = totalPrice['price']
                     if 'text' in price:
-                        info_list.append('총 금액 : ' + price['text'])
+                        # info_list.append('총 금액 : ' + price['text'])
                         totalPrice = price['text']
+                        # print(totalPrice)
+
+            else:
+                totalPrice = '총금액없음'
 
 
 
@@ -172,10 +190,13 @@ for image in result['images']:
 for store in store_list:
     print(store)
 
+print('----------')
+
 for product in product_list:
     print(product)
+print('----------')
 
-print(total_price)
+print(totalPrice)
 
 
 # data = [
@@ -185,8 +206,6 @@ print(total_price)
 #     ['Bob', '35', 'bob@example.com']
 # ]
 
-'''
-'''
 data = [
     ['상호명', '점', '주소', '날짜'],
     store_list,
@@ -214,4 +233,17 @@ with open('output.md', 'w', encoding="utf-8") as file:
     markdown_data = convert_data_to_markdown(data)
     file.write(markdown_data)
 
+
+input_file = 'output.md'
+output_file = 'output.pdf'
+
+# 명령 실행
+subprocess.run(['pandoc', input_file, '-o', output_file])
+
+
+# input_file = 'output.md'
+# output_file = 'output.pdf'
+#
+# # 마크다운 파일을 PDF로 변환
+# pypandoc.convert_file(input_file, 'pdf', outputfile=output_file, extra_args=['-s'])
 
